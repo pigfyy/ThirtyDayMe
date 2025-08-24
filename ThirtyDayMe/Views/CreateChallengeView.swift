@@ -10,19 +10,21 @@ struct CreateChallengeView: View {
     @State private var dailyAction = ""
     @State private var emoji = "✅"
 
+    @State private var startDate = Date()
+    @State private var endDate = Calendar.current.date(
+        byAdding: .day, value: 29, to: Date())!
+
     var body: some View {
-        VStack {
-            Text("Create Challenge")
+        NavigationStack {
             Form {
-                Section {
-                    LabeledContent("Title") {
-                        TextField("", text: $title)
-                    }
+                Section("Challenge Information") {
+                    TextField("Title", text: $title)
                     LabeledContent("Wish") {
-                        TextField("", text: $wish)
+                        TextField("What do you want to achieve?", text: $wish)
                     }
                     LabeledContent("Daily Action") {
-                        TextField("", text: $dailyAction)
+                        TextField(
+                            "What will you do every day?", text: $dailyAction)
                     }
                     LabeledContent("Emoji") {
                         TextField("", text: $emoji)
@@ -38,21 +40,33 @@ struct CreateChallengeView: View {
                     }
                 }
 
-                Section {
-                    Button("Submit") {
-                        submitForm()
-                    }
+                Section("Advanced Settings") {
+                    DatePicker(
+                        "Start Date",
+                        selection: $startDate,
+                        displayedComponents: [.date]
+                    )
+                    DatePicker(
+                        "End Date",
+                        selection: $endDate,
+                        in: startDate...,
+                        displayedComponents: [.date]
+                    )
                 }
-            }
+
+                Button("Submit") {
+                    submitForm()
+                }
+                .disabled(title.isEmpty || wish.isEmpty || dailyAction.isEmpty)
+            }.navigationTitle("Create Challenge")
         }
     }
 
     private func submitForm() {
         let newChallenge = Challenge(
             title: title, wish: wish, dailyAction: dailyAction, emoji: emoji,
-            startDate: Date(),
-            endDate: Calendar.current.date(
-                byAdding: .day, value: 29, to: Date())!
+            startDate: startDate,
+            endDate: endDate
         )
 
         modelContext.insert(newChallenge)

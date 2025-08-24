@@ -9,8 +9,10 @@ struct HomeView: View {
     func deleteChallenge(at offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                let challenge = challenges[index]
-                modelContext.delete(challenge)
+                if index < challenges.count {
+                    let challenge = challenges[index]
+                    modelContext.delete(challenge)
+                }
             }
             
             do {
