@@ -6,8 +6,6 @@ struct ChallengeDay {
     var date: Date
     var col: Int
     var dayProgress: DailyProgress?
-    var isLeftComplete: Bool
-    var isRightComplete: Bool
     var isAccessible: Bool
     var isShown: Bool
 }
@@ -18,77 +16,46 @@ struct ChallengeView: View {
     let weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
     let gap: CGFloat = 6
 
-    var challengeGridInformation: [[ChallengeDay]] {
-        generateDailyGridInformation()
-    }
+    @State private var challengeGridInformation: [[ChallengeDay]] = []
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                // Challenge date range header
-                VStack(spacing: 8) {
-                    Text(challenge.title)
-                        .font(.title2)
-                        .fontWeight(.bold)
+            if challenge.modelContext == nil {
+                ContentUnavailableView(
+                    "Challenge Deleted",
+                    systemImage: "trash"
+                )
+            } else {
+                VStack(spacing: 20) {
+                    headerSection
 
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Start")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text(challenge.startDate, style: .date)
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "arrow.right")
-                            .foregroundColor(.secondary)
-
-                        Spacer()
-
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Text("End")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text(challenge.endDate, style: .date)
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                        }
-                    }
-                    .padding(.horizontal, 40)
-                }
-                .padding(.vertical, 12)
-                .padding(.horizontal, 20)
-                .background(Color(.systemGray6))
-                .cornerRadius(10)
-
-                // Calendar grid
-                Grid(horizontalSpacing: 0, verticalSpacing: gap) {
-                    GridRow {
-                        ForEach(weekDays, id: \.self) { day in
-                            Text("\(day)")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .frame(maxWidth: .infinity)
-                                .padding(.horizontal, 3)
-                        }
-                    }
-
-                    ForEach(challengeGridInformation.indices, id: \.self) {
-                        row in
+                    // Calendar grid
+                    Grid(horizontalSpacing: 0, verticalSpacing: gap) {
                         GridRow {
-                            ForEach(
-                                challengeGridInformation[row].indices,
-                                id: \.self
-                            ) { col in
-                                DayContainerView(
-                                    challengeDay: challengeGridInformation[row][
-                                        col],
-                                    challenge: challenge,
-                                    gap: gap
-                                )
+                            ForEach(weekDays, id: \.self) { day in
+                                Text("\(day)")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.horizontal, 3)
+                            }
+                        }
+
+                        ForEach(challengeGridInformation.indices, id: \.self) {
+                            row in
+                            GridRow {
+                                ForEach(
+                                    challengeGridInformation[row].indices,
+                                    id: \.self
+                                ) { col in
+                                    DayContainerView(
+                                        challengeDay: challengeGridInformation[
+                                            row][
+                                                col],
+                                        challenge: challenge,
+                                        gap: gap
+                                    )
+                                }
                             }
                         }
                     }
@@ -96,8 +63,85 @@ struct ChallengeView: View {
             }
         }
         .padding()
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink(
+                    destination: EditChallengeView(challenge: challenge)
+                ) {
+                    Image(systemName: "square.and.pencil")
+                }
+            }
+        }
+        .navigationTitle(challenge.title)
+        .navigationBarTitleDisplayMode(.automatic)
+        .onAppear {
+            challengeGridInformation = generateDailyGridInformation()
+        }
+        .onChange(of: challenge.dailyProgress) { _, _ in
+            challengeGridInformation = generateDailyGridInformation()
+        }
     }
 
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Wish")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+                Text(challenge.wish)
+                    .font(.body)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Daily Action")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+                Text(challenge.dailyAction)
+                    .font(.body)
+            }
+
+            Divider()
+
+            HStack(spacing: 32) {
+                VStack (alignment: .leading) {
+                    Text("Start Date")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                    Text(challenge.startDate.formatted(.dateTime.month().day()))
+                        .font(.body)
+                }
+                
+                
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .frame(height: 2)
+                        .foregroundColor(.secondary)
+
+                    Image(systemName: "arrowtriangle.right.fill")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                    
+                
+                VStack (alignment: .leading) {
+                    Text("End Date")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                    Text(challenge.endDate.formatted(.dateTime.month().day()))
+                        .font(.body)
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
 }
 
 // MARK: - Helper Methods
@@ -123,7 +167,6 @@ extension ChallengeView {
                 ChallengeDay(
                     date: placeholderDate, col: placeholderCol,
                     dayProgress: nil,
-                    isLeftComplete: false, isRightComplete: false,
                     isAccessible: false, isShown: false
                 ))
         }
@@ -139,23 +182,6 @@ extension ChallengeView {
             })
             let dayProgress = dayIdx.map { challenge.dailyProgress[$0] } ?? nil
 
-            // Check if previous calendar day has a completed progress entry
-            let previousDate =
-                calendar.date(byAdding: .day, value: -1, to: currentDate)
-                ?? currentDate
-            let isLeftComplete =
-                challenge.dailyProgress.first(where: {
-                    calendar.isDate($0.date, inSameDayAs: previousDate)
-                })?.completion ?? false
-
-            // Check if next calendar day has a completed progress entry
-            let nextDate =
-                calendar.date(byAdding: .day, value: 1, to: currentDate)
-                ?? currentDate
-            let isRightComplete =
-                challenge.dailyProgress.first(where: {
-                    calendar.isDate($0.date, inSameDayAs: nextDate)
-                })?.completion ?? false
             let today = calendar.startOfDay(for: Date())
             let currentDayStart = calendar.startOfDay(for: currentDate)
             let isAccessible = today >= currentDayStart
@@ -164,8 +190,6 @@ extension ChallengeView {
             challengeDays.append(
                 ChallengeDay(
                     date: currentDate, col: col, dayProgress: dayProgress,
-                    isLeftComplete: isLeftComplete,
-                    isRightComplete: isRightComplete,
                     isAccessible: isAccessible, isShown: true
                 ))
 
@@ -190,7 +214,6 @@ extension ChallengeView {
                     ChallengeDay(
                         date: placeholderDate, col: placeholderCol,
                         dayProgress: nil,
-                        isLeftComplete: false, isRightComplete: false,
                         isAccessible: false, isShown: false
                     ))
             }
@@ -229,11 +252,30 @@ struct DayContainerView: View {
     let gap: CGFloat
 
     var body: some View {
+        let calendar = Calendar.current
         let isViable = challengeDay.dayProgress?.completion ?? false
-        let hasLeftStreak =
-            isViable && challengeDay.col != 0 && challengeDay.isLeftComplete
+
+        // Dynamically check if previous day is complete
+        let previousDate =
+            calendar.date(byAdding: .day, value: -1, to: challengeDay.date)
+            ?? challengeDay.date
+        let isLeftComplete =
+            challenge.dailyProgress.first(where: {
+                calendar.isDate($0.date, inSameDayAs: previousDate)
+            })?.completion ?? false
+
+        // Dynamically check if next day is complete
+        let nextDate =
+            calendar.date(byAdding: .day, value: 1, to: challengeDay.date)
+            ?? challengeDay.date
+        let isRightComplete =
+            challenge.dailyProgress.first(where: {
+                calendar.isDate($0.date, inSameDayAs: nextDate)
+            })?.completion ?? false
+
+        let hasLeftStreak = isViable && challengeDay.col != 0 && isLeftComplete
         let hasRightStreak =
-            isViable && challengeDay.col != 6 && challengeDay.isRightComplete
+            isViable && challengeDay.col != 6 && isRightComplete
 
         HStack(spacing: 0) {
             Rectangle()
@@ -274,12 +316,12 @@ struct DayView: View {
             Text(
                 "\(Calendar.current.component(.day, from: challengeDay.date))"
             )
-            .font(.body).foregroundStyle(.black)
+            .font(.system(size: 15)).foregroundStyle(.primary)
             .fontWeight(
                 challengeDay.isAccessible == true ? .bold : .regular)
             if isComplete {
                 Text("\(challenge.emoji)")
-                    .font(.system(size: 12))
+                    .font(.system(size: 10))
             }
         }
         .frame(
@@ -299,7 +341,9 @@ struct DayView: View {
                 topTrailingRadius: hasRightStreak ? 0 : cornerRadius
             )
         )
-        .opacity(!challengeDay.isShown ? 0 : challengeDay.isAccessible ? 1.0 : 0.5)
+        .opacity(
+            !challengeDay.isShown ? 0 : challengeDay.isAccessible ? 1.0 : 0.5
+        )
         .onTapGesture {
             if challengeDay.isAccessible && challengeDay.isShown {
                 toggleCompletion()
@@ -333,10 +377,12 @@ struct ChallengeViewPreview: View {
     @Query var challenges: [Challenge]
 
     var body: some View {
-        if let challenge = challenges.last {
-            ChallengeView(challenge: challenge)
-        } else {
-            Text("No challenges found")
+        NavigationStack {
+            if let challenge = challenges.last {
+                ChallengeView(challenge: challenge)
+            } else {
+                Text("No challenges found")
+            }
         }
     }
 }
