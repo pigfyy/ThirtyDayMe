@@ -11,6 +11,13 @@ struct HomeView: View {
             for index in offsets {
                 if index < challenges.count {
                     let challenge = challenges[index]
+                    
+                    // First delete all associated DailyProgress entries
+                    for progress in challenge.dailyProgress {
+                        modelContext.delete(progress)
+                    }
+                    
+                    // Then delete the challenge itself
                     modelContext.delete(challenge)
                 }
             }
@@ -53,10 +60,6 @@ struct HomeView: View {
                             "Add your first 30-day challenge to get started")
                     )
                 }
-            }
-        }.onAppear {
-            if !challenges.isEmpty {
-                print(challenges[0].dailyProgress)
             }
         }
     }
